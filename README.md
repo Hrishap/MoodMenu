@@ -28,7 +28,18 @@ backend/    # Node.js/Express API (MongoDB, Gemini AI, Spoonacular)
    ```
 
 2. **Configure environment variables:**
-   - Set up `.env` files in both `backend/` and `frontend/` folders.
+
+   ### Backend (`backend/.env`) 🔙
+   - `MONGO_URI` — MongoDB connection string
+   - `JWT_SECRET` — Secret key for JWT authentication
+   - `GEMINI_API_KEY` — Google Gemini API key
+   - `SPOONACULAR_API_KEY` — Spoonacular API key
+   - `UNSPLASH_ACCESS_KEY` — Unsplash API key (for images, optional)
+   - `PEXELS_API_KEY` — Pexels API key (for images, optional)
+   - `PORT` — (optional) API server port, default is `4000`
+
+   ### Frontend (`frontend/.env`) 🖥️
+   - `VITE_API_URL` — Base URL for backend API (e.g. `http://localhost:4000/api`)
 
 3. **Run the backend:**
    ```bash
@@ -63,4 +74,4 @@ MIT
 
 ---
 
-Enjoy cooking & discovering
+Enjoy cooking & discovering new moods!
