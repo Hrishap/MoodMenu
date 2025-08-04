@@ -100,7 +100,6 @@ const PORT = process.env.PORT || 4000;
 const startServer = async () => {
   try {
     await connectDB();
-    
     app.listen(PORT, () => {
       console.log(`🚀 MoodMenu API Server running on port ${PORT}`);
       console.log(`📱 Health check: http://localhost:${PORT}/api/health`);

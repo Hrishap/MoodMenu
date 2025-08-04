@@ -199,16 +199,14 @@ class ImageService {
     return defaultImages[category] || defaultImages.food;
   }
 
-  // Clear expired cache
+  // Clear expired cache (reverted to original logic)
   async clearExpiredCache() {
     try {
       const files = await fs.readdir(this.cacheDir);
-      
       for (const file of files) {
         if (file.endsWith('.json')) {
           const filePath = path.join(this.cacheDir, file);
           const cacheData = JSON.parse(await fs.readFile(filePath, 'utf8'));
-          
           if (Date.now() >= cacheData.expiresAt) {
             await fs.unlink(filePath);
           }

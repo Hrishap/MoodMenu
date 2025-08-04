@@ -62,14 +62,19 @@ exports.submitMood = async (req, res) => {
     interaction.recipe = enhancedRecipes[0]; // Primary recipe for compatibility
     await interaction.save();
 
+    const enhancedRecipesWithId = enhancedRecipes.map(recipe => ({
+      ...recipe,
+      interactionId: interaction._id.toString() // ADD THIS LINE
+    }));
+    
     res.json({
       message: 'Multiple mood-based recipes generated successfully',
       interaction: {
         id: interaction._id,
         mood: interaction.mood,
         context: interaction.context,
-        recipes: enhancedRecipes,
-        totalRecipes: enhancedRecipes.length,
+        recipes: enhancedRecipesWithId, // Use recipes with ID
+        totalRecipes: enhancedRecipesWithId.length,
         createdAt: interaction.createdAt
       }
     });

@@ -43,10 +43,10 @@ const Dashboard = () => {
 
   const handleMoodSubmit = async (moodData) => {
     if (backendStatus !== 'connected') {
-      toast.error('Cannot submit mood: Server is not available');
+      toast.error('Cannot submit mood: Backend server is not running');
       return;
     }
-
+  
     setIsLoading(true);
     setCurrentRecipes([]);
     setSelectedRecipe(null);
@@ -60,7 +60,13 @@ const Dashboard = () => {
       const recipes = response.data.interaction?.recipes || [];
       
       if (recipes.length > 0) {
-        setCurrentRecipes(recipes);
+        // CRITICAL: Ensure each recipe has interactionId
+        const recipesWithId = recipes.map(recipe => ({
+          ...recipe,
+          interactionId: response.data.interaction.id // Add interaction ID
+        }));
+        
+        setCurrentRecipes(recipesWithId);
         toast.success(`${recipes.length} recipe suggestions generated!`);
       } else {
         toast.error('No recipes generated. Please try again.');
@@ -68,9 +74,8 @@ const Dashboard = () => {
     } catch (error) {
       console.error('❌ Mood submission error:', error);
       
-      // More specific error handling
       if (error.code === 'ERR_NETWORK') {
-        toast.error('Cannot connect to server. Please make sure the backend is running.');
+        toast.error('Cannot connect to server. Please make sure the backend is running on port 4000.');
       } else if (error.response?.status === 404) {
         toast.error('API endpoint not found. Please check the backend routes.');
       } else {
