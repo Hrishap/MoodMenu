@@ -35,7 +35,7 @@ const Dashboard = () => {
     setBackendStatus(isConnected ? 'connected' : 'disconnected');
     
     if (!isConnected) {
-      toast.error('Backend server is not running on port 4000. Please start the backend server.', {
+      toast.error('Unable to connect to server. Please check if the backend is running.', {
         duration: 6000,
       });
     }
@@ -43,7 +43,7 @@ const Dashboard = () => {
 
   const handleMoodSubmit = async (moodData) => {
     if (backendStatus !== 'connected') {
-      toast.error('Cannot submit mood: Backend server is not running on port 4000');
+      toast.error('Cannot submit mood: Server is not available');
       return;
     }
 
@@ -70,7 +70,7 @@ const Dashboard = () => {
       
       // More specific error handling
       if (error.code === 'ERR_NETWORK') {
-        toast.error('Cannot connect to server. Please make sure the backend is running on port 4000.');
+        toast.error('Cannot connect to server. Please make sure the backend is running.');
       } else if (error.response?.status === 404) {
         toast.error('API endpoint not found. Please check the backend routes.');
       } else {
@@ -83,7 +83,7 @@ const Dashboard = () => {
 
   const handleQuickMood = (mood) => {
     if (backendStatus !== 'connected') {
-      toast.error('Cannot submit mood: Backend server is not running on port 4000');
+      toast.error('Cannot submit mood: Server is not available');
       return;
     }
     
@@ -119,55 +119,8 @@ const Dashboard = () => {
     }
   };
 
-  // Backend status indicator
-  const BackendStatus = () => (
-    <div className={`mb-4 p-3 rounded-lg border ${
-      backendStatus === 'connected' 
-        ? 'bg-green-50 border-green-200 text-green-800' 
-        : backendStatus === 'disconnected'
-        ? 'bg-red-50 border-red-200 text-red-800'
-        : 'bg-yellow-50 border-yellow-200 text-yellow-800'
-    }`}>
-      <div className="flex items-center space-x-2">
-        {backendStatus === 'checking' && <Loader className="h-4 w-4 animate-spin" />}
-        <div className={`w-2 h-2 rounded-full ${
-          backendStatus === 'connected' ? 'bg-green-500' : 
-          backendStatus === 'disconnected' ? 'bg-red-500' : 'bg-yellow-500'
-        }`} />
-        <span className="font-medium">
-          Backend Status: {
-            backendStatus === 'connected' ? 'Connected (Port 4000)' :
-            backendStatus === 'disconnected' ? 'Disconnected (Port 4000)' : 'Checking...'
-          }
-        </span>
-        {backendStatus === 'disconnected' && (
-          <button 
-            onClick={checkBackend}
-            className="ml-2 text-sm underline hover:no-underline"
-          >
-            Retry
-          </button>
-        )}
-      </div>
-      {backendStatus === 'disconnected' && (
-        <div className="mt-2 text-sm">
-          <p>Please make sure:</p>
-          <ul className="list-disc list-inside ml-2">
-            <li>Backend server is running: <code>cd backend && npm run dev</code></li>
-            <li>Server is running on port 4000</li>
-            <li>MongoDB is connected</li>
-            <li>Check terminal for any error messages</li>
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      {/* Backend Status */}
-      <BackendStatus />
-
       {/* Welcome Section */}
       <div className="text-center">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -248,23 +201,6 @@ const Dashboard = () => {
           <p className="text-gray-600">
             Analyzing your mood and finding the perfect recipes...
           </p>
-        </div>
-      )}
-
-      {/* Development Debug Info */}
-      {import.meta.env.MODE === 'development' && (
-        <div className="card bg-gray-50">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Debug Info</h3>
-          <div className="text-xs text-gray-600 space-y-1">
-            <p>Backend Status: {backendStatus}</p>
-            <p>Current Recipes: {currentRecipes.length}</p>
-            <p>Selected Recipe: {selectedRecipe?.recipeName || 'None'}</p>
-            <p>API Base URL: {import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}</p>
-            <p>Expected Backend: http://localhost:4000</p>
-            {currentRecipes.length > 0 && (
-              <p>InteractionIds: {currentRecipes.map(r => r.interactionId).join(', ')}</p>
-            )}
-          </div>
         </div>
       )}
     </div>
