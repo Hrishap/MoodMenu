@@ -15,7 +15,10 @@ yarn-error.log*
 logs
 *.log
 
+# Cache directory
 cache/
+cache/images/
+
 # Runtime data
 pids
 *.pid
