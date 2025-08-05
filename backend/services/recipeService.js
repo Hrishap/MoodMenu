@@ -31,7 +31,8 @@ class RecipeService {
         cookingTime: recipe.readyInMinutes,
         servings: recipe.servings,
         ingredients: recipe.extendedIngredients?.map(ing => ing.original) || [],
-        instructions: recipe.instructions || recipe.analyzedInstructions?.[0]?.steps?.map(step => step.step).join(' ') || '',
+        instructions: recipe.analyzedInstructions?.[0]?.steps?.map(step => step.step) 
+          || (recipe.instructions ? [recipe.instructions] : []),
         nutrition: {
           calories: recipe.nutrition?.nutrients?.find(n => n.name === 'Calories')?.amount || 0,
           protein: recipe.nutrition?.nutrients?.find(n => n.name === 'Protein')?.amount || 0,
