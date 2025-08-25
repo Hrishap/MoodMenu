@@ -37,7 +37,21 @@ router.post('/create', async (req, res) => {
 
     // Generate meal plan with AI if requested
     if (generateWithAI) {
-      mealPlanData = await mealPlannerService.generateMealPlan(preferences, duration);
+      try {
+        mealPlanData = await mealPlannerService.generateMealPlan(preferences, duration);
+      } catch (aiError) {
+        console.error('AI meal plan generation failed, using fallback:', aiError);
+        // Continue with empty meal plan data, user can manually add meals
+        mealPlanData = {
+          days: Array.from({ length: duration }, (_, i) => ({
+            date: new Date(start.getTime() + i * 24 * 60 * 60 * 1000),
+            meals: {},
+            totalCalories: 0
+          })),
+          shoppingList: [],
+          tips: 'AI generation failed. You can manually add meals to this plan.'
+        };
+      }
     }
 
     const mealPlan = new MealPlan({
@@ -211,15 +225,22 @@ router.put('/:id/day/:dayIndex/meal/:mealType', async (req, res) => {
 
     // Regenerate meal with AI if requested
     if (regenerate) {
-      const existingMeals = mealPlan.days.flatMap(day => 
-        Object.values(day.meals).filter(m => m && m.recipeName)
-      );
-      
-      updatedMeal = await mealPlannerService.generateSingleMeal(
-        mealType,
-        mealPlan.preferences,
-        existingMeals.slice(-5) // Last 5 meals to avoid repetition
-      );
+      try {
+        const existingMeals = mealPlan.days.flatMap(day => 
+          Object.values(day.meals).filter(m => m && m.recipeName)
+        );
+        
+        updatedMeal = await mealPlannerService.generateSingleMeal(
+          mealType,
+          mealPlan.preferences,
+          existingMeals.slice(-5) // Last 5 meals to avoid repetition
+        );
+      } catch (aiError) {
+        console.error('AI meal regeneration failed:', aiError);
+        return res.status(500).json({ 
+          message: 'Failed to regenerate meal with AI. Please try again or add a meal manually.' 
+        });
+      }
     }
 
     // Update the specific meal
