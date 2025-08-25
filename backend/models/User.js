@@ -21,10 +21,43 @@ const UserSchema = new mongoose.Schema({
   preferences: {
     dietaryRestrictions: [{
       type: String,
-      enum: ['vegetarian', 'vegan', 'gluten-free', 'dairy-free', 'nut-free', 'low-carb', 'keto']
+      enum: ['vegetarian', 'vegan', 'gluten-free', 'dairy-free', 'nut-free', 'low-carb', 'keto', 'paleo', 'mediterranean']
     }],
     cuisinePreferences: [String],
-    allergies: [String]
+    allergies: [String],
+    // Meal planning specific preferences
+    mealPlanning: {
+      dislikedIngredients: [String],
+      preferredIngredients: [String],
+      defaultCookingTime: {
+        type: String,
+        enum: ['quick', 'moderate', 'extended'],
+        default: 'moderate'
+      },
+      defaultDifficulty: {
+        type: String,
+        enum: ['easy', 'medium', 'hard'],
+        default: 'easy'
+      },
+      defaultCalorieTarget: {
+        type: Number,
+        default: 2000
+      },
+      defaultMealsPerDay: {
+        type: Number,
+        min: 1,
+        max: 6,
+        default: 3
+      },
+      includeSnacks: {
+        type: Boolean,
+        default: true
+      },
+      preferredMealTypes: [{
+        type: String,
+        enum: ['breakfast', 'lunch', 'dinner', 'snack']
+      }]
+    }
   },
   createdAt: {
     type: Date,

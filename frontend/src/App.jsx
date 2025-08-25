@@ -10,6 +10,8 @@ import Dashboard from './pages/Dashboard';
 import History from './pages/History';
 import RecipeDetail from './pages/RecipeDetail';
 import Profile from './pages/Profile';
+import MealPlanner from './pages/MealPlanner';
+import MealPlanDetail from './pages/MealPlanDetail';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -19,7 +21,7 @@ function App() {
     <Router>
       <div className="min-h-screen bg-gray-50">
         <Navbar />
-        <main className="container mx-auto px-4 py-8">
+        <main>
           <Routes>
             <Route 
               path="/" 
@@ -54,6 +56,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <RecipeDetail />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/meal-planner" 
+              element={
+                <ProtectedRoute>
+                  <MealPlanner />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/meal-planner/:id" 
+              element={
+                <ProtectedRoute>
+                  <MealPlanDetail />
                 </ProtectedRoute>
               } 
             />
