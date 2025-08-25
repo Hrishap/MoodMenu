@@ -314,7 +314,7 @@ Required JSON format:
         
         if (parsed.meal || parsed.customizedMeal) {
           const meal = parsed.meal || parsed.customizedMeal;
-          return this.processSingleMeal(meal);
+          return this.processSingleMeal(meal, mealType);
         }
       }
 
@@ -364,12 +364,12 @@ Required JSON format:
     try {
       ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
         if (meals[mealType]) {
-          processedMeals[mealType] = this.processSingleMeal(meals[mealType]);
+          processedMeals[mealType] = this.processSingleMeal(meals[mealType], mealType);
         }
       });
       
       if (meals.snacks && Array.isArray(meals.snacks)) {
-        processedMeals.snacks = meals.snacks.map(snack => this.processSingleMeal(snack));
+        processedMeals.snacks = meals.snacks.map(snack => this.processSingleMeal(snack, 'snack'));
       }
       
       return processedMeals;
@@ -382,14 +382,23 @@ Required JSON format:
   /**
    * Process and validate single meal data
    */
-  processSingleMeal(meal) {
+  processSingleMeal(meal, expectedType) {
     try {
       if (!meal || typeof meal !== 'object') {
-        return this.getFallbackMeal('meal', {});
+        const fallbackType = expectedType && ['breakfast','lunch','dinner','snack'].includes(expectedType)
+          ? expectedType
+          : 'lunch';
+        return this.getFallbackMeal(fallbackType, {});
+      }
+
+      const validTypes = ['breakfast','lunch','dinner','snack'];
+      let resolvedType = meal.type;
+      if (!validTypes.includes(resolvedType)) {
+        resolvedType = validTypes.includes(expectedType) ? expectedType : 'lunch';
       }
 
       return {
-        type: meal.type || 'meal',
+        type: resolvedType,
         recipeName: meal.recipeName || 'Unnamed Recipe',
         ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],
         instructions: meal.instructions || 'No instructions provided',
@@ -404,7 +413,8 @@ Required JSON format:
       };
     } catch (error) {
       console.error('Error processing single meal:', error);
-      return this.getFallbackMeal('meal', {});
+      const fallbackType = ['breakfast','lunch','dinner','snack'].includes(expectedType) ? expectedType : 'lunch';
+      return this.getFallbackMeal(fallbackType, {});
     }
   }
 
