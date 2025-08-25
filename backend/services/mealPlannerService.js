@@ -613,8 +613,15 @@ Required JSON format:
         .replace(/\n\s*\n/g, '\n') // Remove empty lines
         .trim();
 
+      // Fix fraction values in JSON (convert 1/2 to "0.5" or "1/2" as string)
+      jsonText = jsonText.replace(/"amount":\s*(\d+)\/(\d+)/g, '"amount": "$1/$2"');
+      jsonText = jsonText.replace(/"amount":\s*(\d+\.\d+)\/(\d+)/g, '"amount": "$1/$2"');
+      
       // Try to fix common issues with property names
       jsonText = jsonText.replace(/([{,]\s*)(\w+):/g, '$1"$2":'); // Quote unquoted property names
+      
+      // Check if JSON is truncated and try to fix it
+      jsonText = this.fixTruncatedJSON(jsonText);
       
       // Try to parse and return
       JSON.parse(jsonText); // Test if it's valid
@@ -622,7 +629,8 @@ Required JSON format:
       
     } catch (error) {
       console.error('JSON cleaning failed:', error);
-      console.error('Problematic JSON text:', jsonText?.substring(0, 500) + '...');
+      const textToLog = jsonText || jsonMatch?.[1] || jsonMatch?.[0] || 'No JSON text found';
+      console.error('Problematic JSON text:', textToLog.substring(0, 500) + '...');
       
       // Last resort: try to extract just the innermost JSON object
       try {
@@ -658,6 +666,50 @@ Required JSON format:
       }
       
       return null;
+    }
+  }
+
+  /**
+   * Fix truncated JSON by completing incomplete structures
+   */
+  fixTruncatedJSON(jsonText) {
+    try {
+      // Count braces and brackets to see if JSON is complete
+      const openBraces = (jsonText.match(/\{/g) || []).length;
+      const closeBraces = (jsonText.match(/\}/g) || []).length;
+      const openBrackets = (jsonText.match(/\[/g) || []).length;
+      const closeBrackets = (jsonText.match(/\]/g) || []).length;
+
+      let fixedJson = jsonText;
+
+      // If JSON ends abruptly, try to close it properly
+      if (openBraces > closeBraces || openBrackets > closeBrackets) {
+        // Remove incomplete last line if it exists
+        const lines = fixedJson.split('\n');
+        const lastLine = lines[lines.length - 1];
+        
+        // If last line is incomplete (no closing quote or comma/brace), remove it
+        if (lastLine && !lastLine.trim().match(/["}]$/)) {
+          lines.pop();
+          fixedJson = lines.join('\n');
+        }
+
+        // Close missing brackets and braces
+        const missingCloseBrackets = openBrackets - closeBrackets;
+        const missingCloseBraces = openBraces - closeBraces;
+
+        for (let i = 0; i < missingCloseBrackets; i++) {
+          fixedJson += ']';
+        }
+        for (let i = 0; i < missingCloseBraces; i++) {
+          fixedJson += '}';
+        }
+      }
+
+      return fixedJson;
+    } catch (error) {
+      console.error('Error fixing truncated JSON:', error);
+      return jsonText;
     }
   }
 }
