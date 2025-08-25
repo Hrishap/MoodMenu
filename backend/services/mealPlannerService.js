@@ -100,7 +100,9 @@ REQUIREMENTS:
 5. Include accurate ingredient measurements
 6. Estimate cooking times and calories
 
-Please respond in this EXACT JSON format:
+IMPORTANT: Respond with ONLY valid JSON. No additional text, explanations, or markdown formatting.
+
+Required JSON format:
 {
   "mealPlan": {
     "totalDays": ${duration},
@@ -124,12 +126,35 @@ Please respond in this EXACT JSON format:
             "tags": ["breakfast", "quick", "healthy"],
             "nutritionHighlights": "Key nutritional benefits"
           },
-          "lunch": { /* same format */ },
-          "dinner": { /* same format */ }${preferences.includeSnacks ? ',\n          "snacks": [{ /* same format but for snacks */ }]' : ''}
+          "lunch": {
+            "recipeName": "Lunch Recipe Name",
+            "cookingTime": 25,
+            "servings": 2,
+            "calories": 500,
+            "difficulty": "easy",
+            "ingredients": [
+              {"name": "ingredient", "amount": "1", "unit": "cup"}
+            ],
+            "instructions": "Lunch cooking instructions",
+            "tags": ["lunch"],
+            "nutritionHighlights": "Lunch nutrition info"
+          },
+          "dinner": {
+            "recipeName": "Dinner Recipe Name",
+            "cookingTime": 30,
+            "servings": 2,
+            "calories": 600,
+            "difficulty": "easy",
+            "ingredients": [
+              {"name": "ingredient", "amount": "2", "unit": "cups"}
+            ],
+            "instructions": "Dinner cooking instructions",
+            "tags": ["dinner"],
+            "nutritionHighlights": "Dinner nutrition info"
+          }${preferences.includeSnacks ? ',\n          "snacks": [\n            {\n              "recipeName": "Snack Name",\n              "cookingTime": 5,\n              "servings": 1,\n              "calories": 150,\n              "difficulty": "easy",\n              "ingredients": [{"name": "snack ingredient", "amount": "1", "unit": "piece"}],\n              "instructions": "Snack preparation",\n              "tags": ["snack"],\n              "nutritionHighlights": "Snack nutrition"\n            }\n          ]' : ''}
         },
         "totalCalories": 2000
       }
-      /* Repeat for all ${duration} days */
     ]
   },
   "shoppingList": [
@@ -168,7 +193,9 @@ MEAL PREFERENCES:
 
 ${existingMeals.length > 0 ? `AVOID REPETITION - Don't use these recent meals as inspiration: ${existingMeals.map(m => m.recipeName).join(', ')}` : ''}
 
-Respond in this EXACT JSON format:
+IMPORTANT: Respond with ONLY valid JSON. No additional text, explanations, or markdown formatting.
+
+Required JSON format:
 {
   "meal": {
     "type": "${mealType}",
@@ -215,7 +242,9 @@ Please modify the recipe to incorporate the user's changes while maintaining:
 3. Flavor harmony
 4. Appropriate cooking times and methods
 
-Respond in this EXACT JSON format:
+IMPORTANT: Respond with ONLY valid JSON. No additional text, explanations, or markdown formatting.
+
+Required JSON format:
 {
   "customizedMeal": {
     "type": "${originalMeal.type}",
@@ -249,9 +278,11 @@ Respond in this EXACT JSON format:
         return this.getFallbackMealPlan({}, duration);
       }
 
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
+      // Try to extract and clean JSON
+      let jsonText = this.extractAndCleanJSON(responseText);
+      
+      if (jsonText) {
+        const parsed = JSON.parse(jsonText);
         
         if (parsed.mealPlan && parsed.mealPlan.days) {
           // Process and validate the meal plan
@@ -263,6 +294,7 @@ Respond in this EXACT JSON format:
       
     } catch (error) {
       console.error('Error parsing meal plan response:', error);
+      console.error('Raw response text:', geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text);
       return this.getFallbackMealPlan({}, duration);
     }
   }
@@ -274,9 +306,11 @@ Respond in this EXACT JSON format:
     try {
       const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';
       
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
+      // Try to extract and clean JSON
+      let jsonText = this.extractAndCleanJSON(responseText);
+      
+      if (jsonText) {
+        const parsed = JSON.parse(jsonText);
         
         if (parsed.meal || parsed.customizedMeal) {
           const meal = parsed.meal || parsed.customizedMeal;
@@ -288,6 +322,7 @@ Respond in this EXACT JSON format:
       
     } catch (error) {
       console.error('Error parsing single meal response:', error);
+      console.error('Raw response text:', geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text);
       return this.getFallbackMeal(mealType, {});
     }
   }
@@ -296,16 +331,28 @@ Respond in this EXACT JSON format:
    * Process and validate meal plan data
    */
   processMealPlan(mealPlan, shoppingList = [], tips = '') {
-    return {
-      days: mealPlan.days.map((day, index) => ({
+    try {
+      const processedDays = mealPlan.days?.map((day, index) => ({
         date: new Date(Date.now() + index * 24 * 60 * 60 * 1000),
-        meals: this.processDayMeals(day.meals),
-        totalCalories: day.totalCalories || this.calculateDayCalories(day.meals)
-      })),
-      shoppingList: shoppingList || [],
-      nutritionSummary: mealPlan.nutritionSummary || {},
-      tips: tips || 'Follow the recipes as provided and adjust seasoning to taste.'
-    };
+        meals: this.processDayMeals(day.meals || {}),
+        totalCalories: day.totalCalories || this.calculateDayCalories(day.meals || {})
+      })) || [];
+
+      return {
+        days: processedDays,
+        shoppingList: Array.isArray(shoppingList) ? shoppingList : [],
+        nutritionSummary: mealPlan.nutritionSummary || {
+          averageCaloriesPerDay: 2000,
+          proteinPercentage: 20,
+          carbPercentage: 50,
+          fatPercentage: 30
+        },
+        tips: tips || 'Follow the recipes as provided and adjust seasoning to taste.'
+      };
+    } catch (error) {
+      console.error('Error processing meal plan:', error);
+      return this.getFallbackMealPlan({}, mealPlan.totalDays || 7);
+    }
   }
 
   /**
@@ -314,37 +361,51 @@ Respond in this EXACT JSON format:
   processDayMeals(meals) {
     const processedMeals = {};
     
-    ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
-      if (meals[mealType]) {
-        processedMeals[mealType] = this.processSingleMeal(meals[mealType]);
+    try {
+      ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
+        if (meals[mealType]) {
+          processedMeals[mealType] = this.processSingleMeal(meals[mealType]);
+        }
+      });
+      
+      if (meals.snacks && Array.isArray(meals.snacks)) {
+        processedMeals.snacks = meals.snacks.map(snack => this.processSingleMeal(snack));
       }
-    });
-    
-    if (meals.snacks && Array.isArray(meals.snacks)) {
-      processedMeals.snacks = meals.snacks.map(snack => this.processSingleMeal(snack));
+      
+      return processedMeals;
+    } catch (error) {
+      console.error('Error processing day meals:', error);
+      return {};
     }
-    
-    return processedMeals;
   }
 
   /**
    * Process and validate single meal data
    */
   processSingleMeal(meal) {
-    return {
-      type: meal.type || 'meal',
-      recipeName: meal.recipeName || 'Unnamed Recipe',
-      ingredients: meal.ingredients || [],
-      instructions: meal.instructions || 'No instructions provided',
-      cookingTime: meal.cookingTime || 30,
-      servings: meal.servings || 2,
-      calories: meal.calories || 0,
-      difficulty: meal.difficulty || 'easy',
-      tags: meal.tags || [],
-      nutritionHighlights: meal.nutritionHighlights || '',
-      customized: meal.customized || false,
-      modifications: meal.modifications || ''
-    };
+    try {
+      if (!meal || typeof meal !== 'object') {
+        return this.getFallbackMeal('meal', {});
+      }
+
+      return {
+        type: meal.type || 'meal',
+        recipeName: meal.recipeName || 'Unnamed Recipe',
+        ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],
+        instructions: meal.instructions || 'No instructions provided',
+        cookingTime: parseInt(meal.cookingTime) || 30,
+        servings: parseInt(meal.servings) || 2,
+        calories: parseInt(meal.calories) || 0,
+        difficulty: meal.difficulty || 'easy',
+        tags: Array.isArray(meal.tags) ? meal.tags : [],
+        nutritionHighlights: meal.nutritionHighlights || '',
+        customized: Boolean(meal.customized),
+        modifications: meal.modifications || ''
+      };
+    } catch (error) {
+      console.error('Error processing single meal:', error);
+      return this.getFallbackMeal('meal', {});
+    }
   }
 
   /**
@@ -519,6 +580,85 @@ Respond in this EXACT JSON format:
     });
     
     return substitutions;
+  }
+
+  /**
+   * Extract and clean JSON from AI response text
+   */
+  extractAndCleanJSON(responseText) {
+    try {
+      // First, try to find JSON block using multiple patterns
+      let jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+      if (!jsonMatch) {
+        jsonMatch = responseText.match(/```\s*([\s\S]*?)\s*```/);
+      }
+      if (!jsonMatch) {
+        jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      }
+      
+      if (!jsonMatch) {
+        return null;
+      }
+
+      let jsonText = jsonMatch[1] || jsonMatch[0];
+      
+      // Clean up common JSON formatting issues
+      jsonText = jsonText
+        .replace(/```json|```/g, '') // Remove markdown code blocks
+        .replace(/^\s*json\s*/i, '') // Remove leading 'json' word
+        .replace(/\/\*[\s\S]*?\*\//g, '') // Remove /* comments */
+        .replace(/\/\/.*$/gm, '') // Remove // comments
+        .replace(/,\s*}/g, '}') // Remove trailing commas before }
+        .replace(/,\s*]/g, ']') // Remove trailing commas before ]
+        .replace(/\n\s*\n/g, '\n') // Remove empty lines
+        .trim();
+
+      // Try to fix common issues with property names
+      jsonText = jsonText.replace(/([{,]\s*)(\w+):/g, '$1"$2":'); // Quote unquoted property names
+      
+      // Try to parse and return
+      JSON.parse(jsonText); // Test if it's valid
+      return jsonText;
+      
+    } catch (error) {
+      console.error('JSON cleaning failed:', error);
+      console.error('Problematic JSON text:', jsonText?.substring(0, 500) + '...');
+      
+      // Last resort: try to extract just the innermost JSON object
+      try {
+        const lines = responseText.split('\n');
+        let jsonLines = [];
+        let inJson = false;
+        let braceCount = 0;
+        
+        for (const line of lines) {
+          if (line.trim().startsWith('{')) {
+            inJson = true;
+            braceCount = 0;
+          }
+          
+          if (inJson) {
+            jsonLines.push(line);
+            braceCount += (line.match(/\{/g) || []).length;
+            braceCount -= (line.match(/\}/g) || []).length;
+            
+            if (braceCount === 0 && line.includes('}')) {
+              break;
+            }
+          }
+        }
+        
+        if (jsonLines.length > 0) {
+          const attemptJson = jsonLines.join('\n');
+          JSON.parse(attemptJson); // Test if it's valid
+          return attemptJson;
+        }
+      } catch (lastError) {
+        console.error('Last resort JSON extraction failed:', lastError);
+      }
+      
+      return null;
+    }
   }
 }
 
