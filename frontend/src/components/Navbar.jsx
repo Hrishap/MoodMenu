@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Menu, X, Heart, User, History, LogOut } from 'lucide-react';
+import { Menu, X, Heart, User, History, LogOut, ChefHat } from 'lucide-react';
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -45,6 +45,16 @@ const Navbar = () => {
                   }`}
                 >
                   Dashboard
+                </Link>
+                <Link
+                  to="/meal-planner"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActivePath('/meal-planner') || location.pathname.startsWith('/meal-planner')
+                      ? 'text-primary-600 bg-primary-50'
+                      : 'text-gray-700 hover:text-primary-600'
+                  }`}
+                >
+                  Meal Planner
                 </Link>
                 <Link
                   to="/history"
@@ -123,6 +133,17 @@ const Navbar = () => {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Dashboard
+                </Link>
+                <Link
+                  to="/meal-planner"
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                    isActivePath('/meal-planner') || location.pathname.startsWith('/meal-planner')
+                      ? 'text-primary-600 bg-primary-50'
+                      : 'text-gray-700 hover:text-primary-600'
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Meal Planner
                 </Link>
                 <Link
                   to="/history"

@@ -13,6 +13,7 @@ const authRoutes = require('./routes/auth');
 const moodRoutes = require('./routes/mood');
 const recipeRoutes = require('./routes/recipe');
 const geminiRoutes = require('./routes/gemini');
+const mealPlanRoutes = require('./routes/mealPlan');
 
 // CORS configuration - UPDATED FOR FRONTEND
 const corsOptions = {
@@ -63,6 +64,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/mood', moodRoutes);
 app.use('/api/recipe', recipeRoutes);
 app.use('/api/gemini', geminiRoutes);
+app.use('/api/meal-plan', mealPlanRoutes);
 
 // Global error handler
 app.use((error, req, res, next) => {
